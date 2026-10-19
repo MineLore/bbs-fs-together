@@ -209,6 +209,11 @@ public class ActionManager
         }
     }
 
+    public boolean isRecording(ServerPlayerEntity entity)
+    {
+        return this.recorders.containsKey(entity);
+    }
+
     public ActionRecorder stopRecording(ServerPlayerEntity entity)
     {
         ActionRecorder remove = this.recorders.remove(entity);

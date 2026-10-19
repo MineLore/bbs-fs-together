@@ -9,6 +9,8 @@ import mchorse.bbs_mod.data.types.BaseType;
 import mchorse.bbs_mod.data.types.ListType;
 import mchorse.bbs_mod.data.types.MapType;
 import mchorse.bbs_mod.film.Film;
+import mchorse.bbs_mod.network.together.TogetherClient;
+import mchorse.bbs_mod.ui.framework.elements.events.UIRemovedEvent;
 import mchorse.bbs_mod.film.replays.Replay;
 import mchorse.bbs_mod.film.replays.Replays;
 import mchorse.bbs_mod.forms.FormUtils;
@@ -69,6 +71,7 @@ import org.joml.Vector3d;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -1605,6 +1608,23 @@ public class UIReplayList extends UIList<ReplayListEntry>
 
     public void openFormEditor(ValueForm form, boolean editing, Consumer<Form> consumer)
     {
+        Film film = this.panel.getData();
+        List<Replay> selected = this.getSelectedReplays();
+        String lockedReplay = film == null || selected.isEmpty() ? null : selected.get(0).getId();
+
+        /* Two palettes over one replay would each overwrite the form the other one picks */
+        if (lockedReplay != null)
+        {
+            UUID owner = TogetherClient.getFormLockOwner(film.getId(), lockedReplay);
+
+            if (owner != null)
+            {
+                this.getContext().notifyError(TogetherClient.FORM_LOCKED.format(TogetherClient.getName(owner)));
+
+                return;
+            }
+        }
+
         UIElement target = this.panel;
 
         if (this.getRoot() != null)
@@ -1630,6 +1650,14 @@ public class UIReplayList extends UIList<ReplayListEntry>
                 this.formConsumer.accept(f);
             }
         });
+
+        if (lockedReplay != null)
+        {
+            String filmId = film.getId();
+
+            TogetherClient.sendFormLock(filmId, lockedReplay, true);
+            palette.getEvents().register(UIRemovedEvent.class, (e) -> TogetherClient.sendFormLock(filmId, lockedReplay, false));
+        }
 
         palette.updatable();
     }
@@ -1897,6 +1925,11 @@ public class UIReplayList extends UIList<ReplayListEntry>
         }
 
         Form form = replay.form.get();
+
+        if (this.panel.getData() != null)
+        {
+            TogetherClient.renderReplayHeads(context, this.panel.getData().getId(), replay.getId(), this.area.ex() - (form == null ? 2 : 32), y, rowHeight);
+        }
 
         if (form != null)
         {

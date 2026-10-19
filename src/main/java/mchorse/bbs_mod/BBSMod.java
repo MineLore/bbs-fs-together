@@ -77,6 +77,7 @@ import mchorse.bbs_mod.forms.forms.VanillaParticleForm;
 import mchorse.bbs_mod.items.GunItem;
 import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.network.ServerNetwork;
+import mchorse.bbs_mod.network.together.TogetherServer;
 import mchorse.bbs_mod.resources.AssetProvider;
 import mchorse.bbs_mod.resources.ISourcePack;
 import mchorse.bbs_mod.resources.Link;
@@ -599,8 +600,16 @@ public class BBSMod implements ModInitializer
             worldFolder = event.getSavePath(WorldSavePath.ROOT).toFile();
             server = event;
         });
-        ServerPlayConnectionEvents.JOIN.register((a, b, c) -> ServerNetwork.sendHandshake(c, b));
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> actions.stopFor(handler.getPlayer()));
+        ServerPlayConnectionEvents.JOIN.register((a, b, c) ->
+        {
+            ServerNetwork.sendHandshake(c, b);
+            TogetherServer.onJoin(c, a.getPlayer());
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+        {
+            actions.stopFor(handler.getPlayer());
+            TogetherServer.onDisconnect(server, handler.getPlayer());
+        });
 
         ActionHandler.registerHandlers(actions);
 

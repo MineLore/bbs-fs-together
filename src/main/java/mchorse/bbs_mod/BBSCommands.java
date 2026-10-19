@@ -18,6 +18,7 @@ import mchorse.bbs_mod.forms.states.AnimationState;
 import mchorse.bbs_mod.mixin.LevelPropertiesAccessor;
 import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.network.ServerNetwork;
+import mchorse.bbs_mod.network.together.TogetherServer;
 import mchorse.bbs_mod.settings.Settings;
 import mchorse.bbs_mod.settings.values.base.BaseValue;
 import mchorse.bbs_mod.settings.values.core.ValueGroup;
@@ -69,8 +70,23 @@ public class BBSCommands
         registerCheatsCommand(bbs, environment);
         registerBoomCommand(bbs, environment, hasPermissions);
         registerStructureSaveCommand(bbs, environment, hasPermissions);
+        registerRecordCommand(bbs, environment, hasPermissions);
 
         dispatcher.register(bbs);
+    }
+
+    /**
+     * /bbs record &lt;targets&gt; — everyone selected starts recording their selected replay at
+     * once; running it again stops whoever is still recording.
+     */
+    private static void registerRecordCommand(LiteralArgumentBuilder<ServerCommandSource> bbs, CommandManager.RegistrationEnvironment environment, Predicate<ServerCommandSource> hasPermissions)
+    {
+        LiteralArgumentBuilder<ServerCommandSource> record = CommandManager.literal("record");
+        RequiredArgumentBuilder<ServerCommandSource, EntitySelector> targets = CommandManager.argument("targets", EntityArgumentType.players());
+
+        bbs.then(record.requires(hasPermissions).then(targets.executes((source) ->
+            TogetherServer.toggleGroupRecording(EntityArgumentType.getPlayers(source, "targets"))
+        )));
     }
 
     private static void registerStructureSaveCommand(LiteralArgumentBuilder<ServerCommandSource> bbs, CommandManager.RegistrationEnvironment environment, Predicate<ServerCommandSource> hasPermissions)

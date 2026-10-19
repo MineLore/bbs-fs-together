@@ -26,6 +26,7 @@ import mchorse.bbs_mod.graphics.window.Window;
 import mchorse.bbs_mod.l10n.L10n;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.network.ClientNetwork;
+import mchorse.bbs_mod.network.together.TogetherClient;
 import mchorse.bbs_mod.settings.values.IValueListener;
 import mchorse.bbs_mod.settings.values.base.BaseValue;
 import mchorse.bbs_mod.settings.values.ui.EditorLayoutNode;
@@ -1078,6 +1079,8 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
     {
         UIFilmOverlayPanel crudPanel = new UIFilmOverlayPanel(this.getTitle(), this, this::pickData);
 
+        crudPanel.namesList.decorator = (context, element, y, h) -> TogetherClient.renderFilmHeads(context, element.toString(), crudPanel.namesList.area.ex() - 4, y, h);
+
         this.duplicateFilm = new UIIcon(Icons.SCENE, (b) ->
         {
             UIPromptOverlayPanel panel = new UIPromptOverlayPanel(
@@ -1728,6 +1731,8 @@ public class UIFilmPanel extends UIDataDashboardPanel<Film> implements IFlightSu
         {
             BBSSettings.lightInputs = false;
         }
+
+        TogetherClient.renderFilmPanel(this, context);
 
         if (this.entered)
         {

@@ -22,6 +22,7 @@ import mchorse.bbs_mod.forms.entities.MCEntity;
 import mchorse.bbs_mod.forms.forms.Form;
 import mchorse.bbs_mod.items.GunProperties;
 import mchorse.bbs_mod.morphing.Morph;
+import mchorse.bbs_mod.network.together.TogetherServer;
 import mchorse.bbs_mod.utils.DataPath;
 import mchorse.bbs_mod.utils.EnumUtils;
 import mchorse.bbs_mod.utils.MathUtils;
@@ -109,6 +110,7 @@ public class ServerNetwork
     public static void reset()
     {
         crusher.reset();
+        TogetherServer.reset();
     }
 
     public static CustomPayload.Id<BufPayload> idFor(Identifier identifier)
@@ -165,6 +167,8 @@ public class ServerNetwork
         registerS2C(CLIENT_REQUEST_FILM_RESYNC);
         registerS2C(CLIENT_STRUCTURE_SAVED);
         registerS2C(CLIENT_STRUCTURE_CUT);
+
+        TogetherServer.setup();
 
         ServerPlayNetworking.registerGlobalReceiver(idFor(SERVER_MODEL_BLOCK_FORM_PACKET), (payload, context) -> handleModelBlockFormPacket(context.server(), context.player(), payload.asPacketByteBuf()));
         ServerPlayNetworking.registerGlobalReceiver(idFor(SERVER_MODEL_BLOCK_TRANSFORMS_PACKET), (payload, context) -> handleModelBlockTransformsPacket(context.server(), context.player(), payload.asPacketByteBuf()));
@@ -299,7 +303,7 @@ public class ServerNetwork
             return;
         }
 
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             BlockPos pos = buf.readBlockPos();
 
@@ -330,7 +334,7 @@ public class ServerNetwork
             return;
         }
 
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             try
             {
@@ -372,7 +376,7 @@ public class ServerNetwork
             return;
         }
 
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             Form form = null;
 
@@ -404,7 +408,7 @@ public class ServerNetwork
             return;
         }
 
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             MapType data = (MapType) DataStorageUtils.readFromBytes(bytes);
             int callbackId = packetByteBuf.readInt();
@@ -421,14 +425,17 @@ public class ServerNetwork
             else if (op == RepositoryOperation.SAVE)
             {
                 films.save(data.getString("id"), data.getMap("data"));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
             else if (op == RepositoryOperation.RENAME)
             {
                 films.rename(data.getString("from"), data.getString("to"));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
             else if (op == RepositoryOperation.DELETE)
             {
                 films.delete(data.getString("id"));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
             else if (op == RepositoryOperation.KEYS)
             {
@@ -443,14 +450,17 @@ public class ServerNetwork
             else if (op == RepositoryOperation.ADD_FOLDER)
             {
                 sendManagerData(player, callbackId, op, new ByteType(films.addFolder(data.getString("folder"))));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
             else if (op == RepositoryOperation.RENAME_FOLDER)
             {
                 sendManagerData(player, callbackId, op, new ByteType(films.renameFolder(data.getString("from"), data.getString("to"))));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
             else if (op == RepositoryOperation.DELETE_FOLDER)
             {
                 sendManagerData(player, callbackId, op, new ByteType(films.deleteFolder(data.getString("folder"))));
+                TogetherServer.onFilmRepository(server, player, op, data);
             }
         });
     }
@@ -488,6 +498,8 @@ public class ServerNetwork
                 if (recorder != null)
                 {
                     Clips clips = recorder.composeClips();
+
+                    TogetherServer.stripRecordCommands(clips);
 
                     /* Send recorded clips to the client */
                     sendRecordedActions(player, filmId, replayId, tick, clips);
@@ -625,7 +637,7 @@ public class ServerNetwork
             return;
         }
 
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             String filmId = packetByteBuf.readString();
             List<String> path = new ArrayList<>();
@@ -692,7 +704,7 @@ public class ServerNetwork
 
     private static void handleSharedFormPacket(MinecraftServer server, ServerPlayerEntity player, PacketByteBuf buf)
     {
-        crusher.receive(buf, (bytes, packetByteBuf) ->
+        TogetherServer.receiveChunked(player, buf, (bytes, packetByteBuf) ->
         {
             UUID playerUuid = packetByteBuf.readUuid();
             MapType data = (MapType) DataStorageUtils.readFromBytes(bytes);

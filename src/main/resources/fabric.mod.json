@@ -2,11 +2,12 @@
     "schemaVersion": 1,
     "id": "bbs",
     "version": "${version}",
-    "name": "BBS FS mod",
-    "description": "A new generation of video production mod",
+    "name": "BBS FS Together",
+    "description": "BBS FS with the multiplayer collaboration of BBS Together: live film co-editing, cursors, presence, group recording and asset sync",
     "authors": [
         "McHorse",
-        "Wemppy"
+        "Wemppy",
+        "ChillinWithDylan (BBS Together)"
     ],
     "contributors": [
         "Chryfi (tracker clip)",

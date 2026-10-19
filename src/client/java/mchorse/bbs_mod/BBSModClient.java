@@ -79,6 +79,7 @@ import mchorse.bbs_mod.l10n.L10n;
 import mchorse.bbs_mod.l10n.keys.IKey;
 import mchorse.bbs_mod.morphing.Morph;
 import mchorse.bbs_mod.network.ClientNetwork;
+import mchorse.bbs_mod.network.together.TogetherClient;
 import mchorse.bbs_mod.network.ServerNetwork;
 import mchorse.bbs_mod.particles.ParticleManager;
 import mchorse.bbs_mod.resources.AssetProvider;
@@ -890,6 +891,7 @@ public class BBSModClient implements ClientModInitializer
             films = new Films();
 
             ClientNetwork.resetHandshake();
+            TogetherClient.reset();
             films.reset();
             cameraController.reset();
         });
@@ -1048,6 +1050,7 @@ public class BBSModClient implements ClientModInitializer
 
         /* Network */
         ClientNetwork.setup();
+        TogetherClient.setup();
 
         /* Entity renderers */
         EntityRendererRegistry.register(BBSMod.ACTOR_ENTITY, ActorEntityRenderer::new);

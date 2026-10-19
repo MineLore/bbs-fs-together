@@ -37,7 +37,9 @@ public class ContentType
 
     private static IRepository<? extends ValueGroup> getFilmsRepository()
     {
-        if (MinecraftClient.getInstance().isIntegratedServerRunning())
+        /* Opened to LAN, the host goes through the server like everyone else, or the others would
+         * never hear about its saves (see TogetherServer) */
+        if (MinecraftClient.getInstance().isIntegratedServerRunning() && !MinecraftClient.getInstance().getServer().isRemote())
         {
             return FILMS_REPOSITORY;
         }

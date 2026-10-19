@@ -18,6 +18,8 @@ import java.util.function.Consumer;
 
 public class UIDataPathList extends UIList<DataPath>
 {
+    public IRowDecorator decorator;
+
     /**
      * A list of paths.
      */
@@ -318,6 +320,17 @@ public class UIDataPathList extends UIList<DataPath>
         context.batcher.icon(element.folder ? Icons.FOLDER : this.fileIcon, RowStyle.iconColor(hover || selected), x, y + this.rowHeight() / 2F, 0F, 0.5F);
 
         super.renderElementPart(context, element, i, x + 12, y, hover, selected);
+
+        if (this.decorator != null && !element.folder)
+        {
+            this.decorator.render(context, element, y, this.rowHeight());
+        }
+    }
+
+    /** Extra drawing on top of a file row, e.g. who else has that file open. */
+    public interface IRowDecorator
+    {
+        void render(UIContext context, DataPath element, int y, int h);
     }
 
     @Override

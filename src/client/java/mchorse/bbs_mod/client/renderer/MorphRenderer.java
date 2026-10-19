@@ -28,7 +28,8 @@ import net.minecraft.client.render.entity.state.LivingEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.RotationAxis;
-import org.joml.Matrix4f;
+import org.joml.Matrix4f;import mchorse.bbs_mod.network.together.TogetherClient;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -77,6 +78,11 @@ public class MorphRenderer
         if (hidePlayer)
         {
             if (FormUtilsClient.getCurrentForm() instanceof MobForm form && !form.isPlayer())
+            {
+                return true;
+            }
+
+            if (TogetherClient.isInEditor(player))
             {
                 return true;
             }

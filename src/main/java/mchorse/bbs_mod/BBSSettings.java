@@ -238,6 +238,12 @@ public class BBSSettings {
 	public static ValueString cdnUrl;
 	public static ValueString cdnToken;
 
+	public static ValueBoolean togetherCursors;
+	public static ValueBoolean togetherHeads;
+	public static ValueBoolean togetherAssetDownload;
+	public static ValueBoolean togetherAssetUpload;
+	public static ValueBoolean togetherAssetReceive;
+
 	private static final int DEFAULT_PRIMARY_COLOR = 0xff3242;
 	private static final float DEFAULT_OVERLAY_BACKGROUND_OPACITY = 0.5F;
 
@@ -896,6 +902,15 @@ public class BBSSettings {
 		builder.category("cdn", Icons.SERVER);
 		cdnUrl = builder.getString("url", "");
 		cdnToken = builder.getString("token", "");
+
+		/* Multiplayer collaboration (BBS Together). Pushing local files to other players is opt-in on
+		 * both ends: nobody wants a stranger's folder of models written into their own on join. */
+		builder.category("together", Icons.USER);
+		togetherCursors = builder.getBoolean("cursors", true);
+		togetherHeads = builder.getBoolean("heads", true);
+		togetherAssetDownload = builder.getBoolean("asset_download", true);
+		togetherAssetUpload = builder.getBoolean("asset_upload", false);
+		togetherAssetReceive = builder.getBoolean("asset_receive", false);
 
 		/* Features owning a single option each - a category per switch would mean
 		 * a row in the settings list per switch, so they share one. */
