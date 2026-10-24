@@ -29,6 +29,11 @@ accessible field net/minecraft/entity/PlayerLikeEntity PLAYER_MODE_CUSTOMIZATION
 # Held-item replay in form renderers: the private item queue's custom commands (BBS special-model
 # geometry lands there via submitCustom) have no accessor — ItemFormRenderer.renderItem replays them.
 accessible field net/minecraft/client/render/command/CustomCommandRenderer$Commands customCommands Ljava/util/Map;
+# ...and vanilla's special-model items (shield, trident, banner, chest, head) land in its model and
+# model part commands, which have no accessors either.
+accessible field net/minecraft/client/render/command/ModelPartCommandRenderer$Commands modelPartCommands Ljava/util/Map;
+accessible field net/minecraft/client/render/command/ModelCommandRenderer$Commands opaqueModelCommands Ljava/util/Map;
+accessible field net/minecraft/client/render/command/ModelCommandRenderer$Commands blendedModelCommands Ljava/util/List;
 
 # The vanilla item model predicates (a bow bending, a shield blocking, a trident
 # lifting) ask an entity what it is using - a film has no such entity, so a

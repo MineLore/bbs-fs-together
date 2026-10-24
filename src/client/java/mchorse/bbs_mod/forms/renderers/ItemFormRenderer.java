@@ -15,11 +15,13 @@ import mchorse.bbs_mod.utils.colors.Color;
 import mchorse.bbs_mod.utils.joml.Vectors;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.item.ItemModelManager;
+import net.minecraft.client.model.Model;
 import net.minecraft.client.render.LightmapTextureManager;
 import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.command.BatchingRenderCommandQueue;
+import net.minecraft.client.render.command.ModelCommandRenderer;
 import net.minecraft.client.render.command.OrderedRenderCommandQueueImpl;
 import net.minecraft.client.render.item.ItemRenderState;
 import net.minecraft.client.render.item.ItemRenderer;
@@ -235,6 +237,34 @@ public class ItemFormRenderer extends FormRenderer<ItemForm>
                 matrices.pop();
             }
 
+            /* Vanilla special-model items draw entity models instead of baked quads: a shield, a trident
+             * and a conduit as MODEL PART commands (see ModelPartCommandRenderer#render), a chest, a
+             * banner, a head, a sign or a bed as MODEL commands (see ModelCommandRenderer). Without these
+             * two replays such an item resolved fine and drew nothing at all. Buffers are fetched per
+             * command: the glint layer in between would close a buffer held across the loop. */
+            for (Map.Entry<RenderLayer, List<OrderedRenderCommandQueueImpl.ModelPartCommand>> entry : batch.getModelPartCommands().modelPartCommands.entrySet())
+            {
+                for (OrderedRenderCommandQueueImpl.ModelPartCommand command : entry.getValue())
+                {
+                    renderModelPart(command, entry.getKey(), matrices, consumers);
+                }
+            }
+
+            ModelCommandRenderer.Commands models = batch.getModelCommands();
+
+            for (Map.Entry<RenderLayer, List<OrderedRenderCommandQueueImpl.ModelCommand<?>>> entry : models.opaqueModelCommands.entrySet())
+            {
+                for (OrderedRenderCommandQueueImpl.ModelCommand<?> command : entry.getValue())
+                {
+                    renderModel(command, entry.getKey(), matrices, consumers);
+                }
+            }
+
+            for (OrderedRenderCommandQueueImpl.BlendedModelCommand<?> command : models.blendedModelCommands)
+            {
+                renderModel(command.model(), command.renderType(), matrices, consumers);
+            }
+
             /* BBS special-model items (model block, gun) land in the queue as CUSTOM commands —
              * FormRenderCapture.submitForm captures the form's immediate draws and re-emits them via
              * submitCustom. ItemCommand replay alone would silently drop exactly the mod's own items
@@ -249,5 +279,42 @@ public class ItemFormRenderer extends FormRenderer<ItemForm>
                 }
             }
         }
+    }
+
+    /** One {@code ModelPartCommandRenderer} draw, minus the outline and crumbling passes an item form never has. */
+    private static void renderModelPart(OrderedRenderCommandQueueImpl.ModelPartCommand command, RenderLayer layer, MatrixStack matrices, CustomVertexConsumerProvider consumers)
+    {
+        VertexConsumer buffer = command.hasGlint()
+            ? ItemRenderer.getItemGlintConsumer(consumers, layer, command.sheeted(), true)
+            : consumers.getBuffer(layer);
+
+        if (command.sprite() != null)
+        {
+            buffer = command.sprite().getTextureSpecificVertexConsumer(buffer);
+        }
+
+        matrices.push();
+        matrices.peek().copy(command.matricesEntry());
+        command.modelPart().render(matrices, buffer, command.lightCoords(), command.overlayCoords(), command.tintedColor());
+        matrices.pop();
+    }
+
+    /** One {@code ModelCommandRenderer} draw, likewise without outline and crumbling. */
+    private static <S> void renderModel(OrderedRenderCommandQueueImpl.ModelCommand<S> command, RenderLayer layer, MatrixStack matrices, CustomVertexConsumerProvider consumers)
+    {
+        VertexConsumer buffer = consumers.getBuffer(layer);
+
+        if (command.sprite() != null)
+        {
+            buffer = command.sprite().getTextureSpecificVertexConsumer(buffer);
+        }
+
+        Model<? super S> model = command.model();
+
+        matrices.push();
+        matrices.peek().copy(command.matricesEntry());
+        model.setAngles(command.state());
+        model.render(matrices, buffer, command.lightCoords(), command.overlayCoords(), command.tintedColor());
+        matrices.pop();
     }
 }
