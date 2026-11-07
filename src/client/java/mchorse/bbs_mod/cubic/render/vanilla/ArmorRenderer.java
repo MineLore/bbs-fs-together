@@ -26,6 +26,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.equipment.EquipmentAsset;
 import net.minecraft.item.equipment.trim.ArmorTrim;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.util.Atlases;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.Vec3d;
 
@@ -63,6 +64,8 @@ import java.util.List;
  */
 public class ArmorRenderer
 {
+    private static boolean trimFailureLogged;
+
     /** Per-slot armor models (1.21.4+: the inner/outer pair became head/chest/legs/feet layers). */
     private final EquipmentModelData<BipedEntityModel> models;
     private final ModelPart elytra;
@@ -152,7 +155,19 @@ public class ArmorRenderer
 
         if (trim != null)
         {
-            this.renderTrim(part, assetId, matrices, vertexConsumers, light, trim, innerModel);
+            /* A trim is decoration: if it can't be drawn, the piece it decorates still is. */
+            try
+            {
+                this.renderTrim(part, assetId, matrices, vertexConsumers, light, trim, innerModel);
+            }
+            catch (RuntimeException e)
+            {
+                if (!trimFailureLogged)
+                {
+                    trimFailureLogged = true;
+                    System.err.println("[BBS] couldn't draw an armor trim: " + e);
+                }
+            }
         }
 
         if (itemStack.hasGlint())
@@ -280,9 +295,16 @@ public class ArmorRenderer
     private void renderTrim(ModelPart part, RegistryKey<EquipmentAsset> assetId, MatrixStack matrices, VertexConsumerProvider vertexConsumers, int light, ArmorTrim trim, boolean leggings)
     {
         /* 1.21.4+: the trim texture id comes off the trim itself and the atlas lives in
-         * AtlasManager (BakedModelManager.getAtlas is gone). */
-        SpriteAtlasTexture atlas = MinecraftClient.getInstance().getAtlasManager().getAtlasTexture(TexturedRenderLayers.ARMOR_TRIMS_ATLAS_TEXTURE);
-        Sprite sprite = atlas.getSprite(trim.getTextureId(leggings ? "leggings" : "armor", assetId));
+         * AtlasManager (BakedModelManager.getAtlas is gone). AtlasManager is keyed by the atlas
+         * definition id (Atlases.ARMOR_TRIMS), not by the atlas texture path: asking it for
+         * TexturedRenderLayers.ARMOR_TRIMS_ATLAS_TEXTURE threw, and the throw cut off every armor
+         * piece the model had not drawn yet - trimmed armor came out half worn. */
+        SpriteAtlasTexture atlas = MinecraftClient.getInstance().getAtlasManager().getAtlasTexture(Atlases.ARMOR_TRIMS);
+        /* The trim folder is the layer's own (as vanilla's EquipmentRenderer.TrimSpriteKey does it), not
+         * 1.21.1's "armor"/"leggings": those names point at sprites that no longer exist, and the
+         * missing-texture sprite then covered the whole piece in magenta and black. */
+        EquipmentModel.LayerType layer = leggings ? EquipmentModel.LayerType.HUMANOID_LEGGINGS : EquipmentModel.LayerType.HUMANOID;
+        Sprite sprite = atlas.getSprite(trim.getTextureId(layer.getTrimsDirectory(), assetId));
         VertexConsumer vertexConsumer = sprite.getTextureSpecificVertexConsumer(vertexConsumers.getBuffer(TexturedRenderLayers.getArmorTrims(trim.pattern().value().decal())));
 
         part.render(matrices, vertexConsumer, light, OverlayTexture.DEFAULT_UV);

@@ -6,7 +6,8 @@
   "environment": "client",
   "entrypoints": {
     "fabric-client-gametest": [
-      "mchorse.bbs_mod.gametest.RenderGameTest"
+      "mchorse.bbs_mod.gametest.RenderGameTest",
+      "mchorse.bbs_mod.gametest.FilmGameTest"
     ]
   },
   "depends": {

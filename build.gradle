@@ -71,6 +71,19 @@ fabricApi {
 /* `-PextraMods=a.jar:b.jar` (or a folder) puts players' own client mods next to BBS for the run,
  * to find out which of them breaks a render: the run dir is wiped before each test, so they
  * can't just be dropped into its mods folder. */
+/* BBS talks to the network below Fabric's API, which trips the game test network synchronizer at random
+ * ("Network synchronizer in invalid state"); Fabric's own advice for that is to turn it off. */
+loom.runs.matching { it.name == 'clientGameTest' }.configureEach {
+	vmArg "-Dfabric.client.gametest.disableNetworkSynchronizer=true"
+}
+
+/* `-PgametestFilm=/path/Name.dat` plays that film in FilmGameTest (form tree and dress go to the log). */
+if (project.hasProperty('gametestFilm')) {
+	loom.runs.matching { it.name == 'clientGameTest' }.configureEach {
+		vmArg "-Dbbs.gametest.film=${project.property('gametestFilm')}"
+	}
+}
+
 tasks.matching { it.name == 'runClientGameTest' }.configureEach {
 	if (project.hasProperty('extraMods')) {
 		def extra = files(project.property('extraMods').toString().split(File.pathSeparator))

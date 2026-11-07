@@ -33,7 +33,8 @@ public class ActionManager
      */
     public void reset()
     {
-        for (ActionPlayer player : this.players)
+        /* A snapshot: stopping a playback can start or end another one */
+        for (ActionPlayer player : new ArrayList<>(this.players))
         {
             player.stop();
         }
@@ -62,17 +63,14 @@ public class ActionManager
     /** Give a leaving player their equipment back and drop any playback that was dressing them. */
     public void stopFor(ServerPlayerEntity player)
     {
-        this.players.removeIf((next) ->
+        for (ActionPlayer next : new ArrayList<>(this.players))
         {
             if (next.isPlayedBy(player))
             {
+                this.players.remove(next);
                 next.stop();
-
-                return true;
             }
-
-            return false;
-        });
+        }
 
         ActionRecorder recorder = this.recorders.remove(player);
 
@@ -84,19 +82,25 @@ public class ActionManager
 
     public void tick()
     {
-        this.players.removeIf((player) ->
+        /* Ticking or stopping a playback can start, stop or end another one (a film's clips run
+         * commands, a stop gives a player their things back): walking the live list there threw
+         * ConcurrentModificationException and took the whole server down mid-film. So the walk goes
+         * over a snapshot, and a playback some earlier one already stopped this tick is skipped. */
+        for (ActionPlayer player : new ArrayList<>(this.players))
         {
-            boolean tick = player.tick();
-
-            if (tick)
+            if (!this.players.contains(player))
             {
-                player.stop();
+                continue;
             }
 
-            return tick;
-        });
+            if (player.tick())
+            {
+                this.players.remove(player);
+                player.stop();
+            }
+        }
 
-        for (Map.Entry<ServerPlayerEntity, ActionRecorder> entry : this.recorders.entrySet())
+        for (Map.Entry<ServerPlayerEntity, ActionRecorder> entry : new ArrayList<>(this.recorders.entrySet()))
         {
             entry.getValue().tick(entry.getKey());
         }
@@ -165,16 +169,12 @@ public class ActionManager
 
     public void stop(String filmId)
     {
-        Iterator<ActionPlayer> it = this.players.iterator();
-
-        while (it.hasNext())
+        for (ActionPlayer next : new ArrayList<>(this.players))
         {
-            ActionPlayer next = it.next();
-
             if (next.film.getId().equals(filmId))
             {
+                this.players.remove(next);
                 next.stop();
-                it.remove();
             }
         }
     }
