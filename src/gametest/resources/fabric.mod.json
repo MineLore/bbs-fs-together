@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "bbs-gametest",
+  "version": "1.0.0",
+  "name": "BBS game tests",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": [
+      "mchorse.bbs_mod.gametest.RenderGameTest"
+    ]
+  },
+  "depends": {
+    "bbs": "*",
+    "fabric-client-gametest-api-v1": "*"
+  }
+}

@@ -55,6 +55,36 @@ loom {
 	}
 }
 
+/* In-game render checks: `gradlew runClientGameTest` starts a real client, builds a world and
+ * takes screenshots of what BBS draws (run/screenshots). Lives in its own source set, so none of
+ * it ends up in the mod jar. */
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "bbs-gametest"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+/* `-PextraMods=a.jar:b.jar` (or a folder) puts players' own client mods next to BBS for the run,
+ * to find out which of them breaks a render: the run dir is wiped before each test, so they
+ * can't just be dropped into its mods folder. */
+tasks.matching { it.name == 'runClientGameTest' }.configureEach {
+	if (project.hasProperty('extraMods')) {
+		def extra = files(project.property('extraMods').toString().split(File.pathSeparator))
+		def mods = layout.buildDirectory.dir('run/clientGameTest/mods')
+
+		doFirst {
+			copy {
+				from extra
+				into mods
+			}
+		}
+	}
+}
+
 /* Windows Java can fail to connect its selector's Unix-domain socket in the user temp
  * directory (PipeImpl: Invalid argument: connect). Keep these short-lived sockets local
  * to the development checkout; this also covers the integrated server started by the client. */
